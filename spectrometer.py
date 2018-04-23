@@ -5,7 +5,7 @@ from fractions import Fraction
 import numpy as np
 import colorsys
 
-DEBUG = True
+DEBUG = False
 name = sys.argv[1]
 im = Image.open(name)
 pix = im.load()
@@ -30,56 +30,7 @@ class Point(object):
             return False
 
 
-def SpectrumBoundX(pix, width, height, b_threshold, r_threshold):
-    top_scatter = []
-    bottom_scatter = []
-    for y in range(0, height):
-        point_top = Point(-1, -1)
-        point_bot = Point(-1, -1)
-
-        # Top of the spectrum
-        for x in range(0, width / 2):
-            r, g, b = pix[x, y]
-            intensity = b
-            # print Down(x), y
-            in_between = y <= Up(x) and y >= Down(x)
-            if intensity > b_threshold and in_between:
-                point_top.x = x
-                point_top.y = y
-                break
-
-        for x in range(width - 1, width / 2, -1):
-            r, g, b = pix[x, y]
-            intensity = r
-            in_between = y <= Up(x) and y >= Down(x)
-            if intensity > r_threshold and in_between:
-                point_bot.x = x
-                point_bot.y = y
-                break
-
-        if point_bot.is_between(width, 0, height, 0):
-            bottom_scatter.append(point_bot)
-        if point_top.is_between(width, 0, height, 0):
-            top_scatter.append(point_top)
-
-    # first line
-    m_top, n_top = LinearRegression(top_scatter, True)
-    m_bot, n_bot = LinearRegression(bottom_scatter, True)
-    global DEBUG
-    if DEBUG:
-        for p in top_scatter:
-            draw.point((p.x, p.y), 'white')
-        for p in bottom_scatter:
-            draw.point((p.x, p.y), 'white')
-    global m_left, n_left, m_right, n_right
-    m_left = m_top
-    m_right = m_bot
-    n_left = n_top
-    n_right = n_bot
-    return (m_top, n_top), (m_bot , n_bot)
-
-
-def LinearRegression(points_array, invert):
+def LinearRegression(points_array):
     n = len(points_array)
     x_sum = 0.
     x2_sum = 0.
@@ -88,14 +39,8 @@ def LinearRegression(points_array, invert):
     xy_sum = 0.
 
     for i in range(0, n):
-        x = 0.
-        y = 0.
-        if invert:
-            x = points_array[i].y
-            y = points_array[i].x
-        else:
-            x = points_array[i].x
-            y = points_array[i].y
+        x = points_array[i].x
+        y = points_array[i].y
         x_sum += x
         x2_sum += x * x
 
@@ -142,8 +87,8 @@ def SpectrumBoundY(pix, width, height, threshold):
             top_scatter.append(point_top)
 
     # first line
-    m_top, n_top = LinearRegression(top_scatter, False)
-    m_bot, n_bot = LinearRegression(bottom_scatter, False)
+    m_top, n_top = LinearRegression(top_scatter)
+    m_bot, n_bot = LinearRegression(bottom_scatter)
     global DEBUG
     if DEBUG:
         for p in top_scatter:
@@ -159,7 +104,6 @@ def SpectrumBoundY(pix, width, height, threshold):
     return (m_top, n_top), (m_bot , n_bot)
 
 
-
 def DrawLinesY((m_top, n_top), (m_bot, n_bot)):
     def top_eqY(value):
         return m_top * value + n_top
@@ -170,30 +114,46 @@ def DrawLinesY((m_top, n_top), (m_bot, n_bot)):
     draw.line((0, top_eqY(0), Width, top_eqY(Width)),fill="#888")
     draw.line((0, bot_eqY(0), Width, bot_eqY(Width)),fill="#888")
 
-def DrawLinesX((m_top, n_top), (m_bot, n_bot)):
-    # m_top = - 1.0 / m_top
-    # m_bot = - 1.0 / m_bot
 
-    def top_eqX(value):
-        return m_top * value + n_top
-    def bot_eqX(value):
-        return m_bot * value + n_bot
+def wavelengthToColor(lambda2):
+    # Based on: http://www.efg2.com/Lab/ScienceAndEngineering/Spectra.htm
+    # The foregoing is based on: http://www.midnightkite.com/color.html
+    factor = 0.0;
 
-    def i_topX(value):
-        return (value - n_top) / float(m_top)
-    def i_botX(value):
-        return (value - n_bot) / float(m_bot)
-
-    global draw
-    # draw.line((i_topX(0), 0, i_topX(500), 500),fill="#888")
-    # draw.line((bot_eqX(0), 0, bot_eqX(Height), Height),fill="#888")
-    # draw.line((top_eqX(0), 0, top_eqX(Height), Height),fill="#888")
-
-    # draw.line((0, i_topX(0), Height, i_topX(Height)),fill="#888")
-    # draw.line((bot_eqX(0), 0, bot_eqX(Height), Height),fill="#888")
+    color=[0,0,0]
+    # Original
+    # thresholds = [ 380, 440, 490, 510, 580, 645, 780 ];
 
 
-def PixeloWaveLength(pixel_x, (pixel_min, pixel_max), (wave_min, wave_max)):
+    thresholds = [ 405, 435, 487, 545, 585, 610, 780 ];
+    #thresholds = [ 380, 440, 490, 510, 580, 610, 780 ];
+    #                    vio  blu  cyn  gre  yel  end
+    # thresholds = [380, 400, 450, 465, 520, 565, 780];
+    for i in range(0, len(thresholds)-1, 1):
+        t1 = thresholds[i]
+        t2 = thresholds[i+1]
+        if (lambda2 < t1 or lambda2 >= t2):
+        	continue
+        if (i % 2 != 0):
+        	tmp = t1
+        	t1 = t2
+        	t2 = tmp
+        if i<5:
+        	color[i % 3] = (lambda2 - t2) / (t1 - t2)
+        color[2 - i / 2] = 1.0;
+        factor = 1.0;
+        break
+
+
+    # Let the intensity fall off near the vision limits
+    if (lambda2 >= 380 and lambda2 < 420):
+        factor = 0.2 + 0.8 * (lambda2 - 380) / (420 - 380);
+    elif (lambda2 >= 600 and lambda2 < 780):
+        factor = 0.2 + 0.8 * (780 - lambda2) / (780 - 600);
+    return (int(255 * color[0] * factor), int(255 * color[1] * factor), int(255 * color[2] * factor))
+
+
+def PixelToWaveLength(pixel_x, (pixel_min, pixel_max), (wave_min, wave_max)):
     # h, s, v = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
     # print h,s,v
     # wave_dif = float(wave_max) - float(wave_min)
@@ -201,22 +161,11 @@ def PixeloWaveLength(pixel_x, (pixel_min, pixel_max), (wave_min, wave_max)):
     scalar = float(pixel_x - pixel_min) / float(pixel_max - pixel_min)
     return scalar * float(wave_max - wave_min) + wave_min
 
-m_left = 0
-n_left = 0
-
-m_right = 0
-n_right = 0
-
 m_up = 0
 n_up = 0
 
 m_down = 0
 n_down = 0
-
-def Left(y_val):
-    return y_val * m_left + n_left
-def Right(y_val):
-    return y_val * m_right + n_right
 
 def Up(x_val):
     return x_val * m_up + n_up
@@ -225,32 +174,102 @@ def Down(x_val):
 
 # Get Bounds
 top_line, bot_line = SpectrumBoundY(pix, im.size[0], im.size[1], 100)
-# top_line_x, bot_line_x = SpectrumBoundX(pix, im.size[0], im.size[1], 100, 100)
-# DrawLinesX(top_line_x, bot_line_x)
-# DrawLinesY(top_line, bot_line)
-print PixeloWaveLength(100, (100, 200), (380, 750))
-draw.line((0, Up(0), Width, Up(Width)),fill="#888")
-draw.line((0, Down(0), Width, Down(Width)),fill="#888")
-# draw.line((Left(0), 0, Left(Height), Height),fill="#888")
-# draw.line((Right(0), 0, Right(Height), Height),fill="#888")
 
-
+# Line count is the lines needed to sample the image + 1
+#                                       (ex: if nedded 15 lines then the line_count is 16)
+line_count = 16
 slopes = []
 intercepts = []
-slopes.append((m_up + m_down) / 2.0)
-intercepts.append((n_up + n_down) / 2.0)
 
-for i in range(1, 3):
-    slopes.append((slopes[i - 1] + m_up) / 2)
-    intercepts.append((intercepts[i - 1] + n_up) / 2)
+# TODO: Add Weights
+weights = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.25, 0.2, 0.15, 0.1, 0.05]
+w_sum = 0.0
+for i in range(len(weights)):
+    w_sum += weights[i]
+
+theta_diff = math.atan(m_up) - math.atan(m_down)
+theta_diff /= -float(line_count)
+
+for i in range(1, line_count):
+    slopes.append(math.tan(math.atan(m_up) + theta_diff * i))
+    intercepts.append(i * abs(n_up - n_down) / (float(line_count)) + n_down)
 
 def mid(val, slope, n):
     return val * slope + n
 
+def i_mid(y_val, slope, n):
+    return (val - n) / slope
+
+
+chart = Image.new('RGB', (Width, Height), (255,255,255))
+_draw = ImageDraw.Draw(chart)
+
+
+# THIS IS FOR SETTING PIXEL MAX AND PIXEL MIN, DELETE THIS AND ADD GIVE PIXELMAX PIXELMIN
+# arr = []
+# pix_min = 480
+# pix_max = 900
+pix_min = Width / 3 - 75
+pix_max = 17
+# Threshold
+TH = 70
+g_peak = 0
+g_peak_pixel = 0
+
+for x in range(0, Width):
+    y = mid(x, slopes[7], intercepts[7])
+    r, g, b = pix[x, y]
+    intensity = r + g + b
+    if g > g_peak:
+        g = g_peak
+        g_peak_pixel = x
+# print g_peak_pixel
+
+for x in range(0, Width):
+    y = mid(x, slopes[7], intercepts[7])
+    r, g, b = pix[x, y]
+    intensity = r + g + b
+    if (intensity > TH):
+        pix_min = x
+        break
+
+for x in range(Width - 1, 0, -1):
+    y = mid(x, slopes[7], intercepts[7])
+    r, g, b = pix[x, y]
+    intensity = r + g + b
+    if (r > TH):
+        pix_max = x
+        break
+# THIS IS FOR SETTING PIXEL MAX AND PIXEL MIN, DELETE THIS AND ADD GIVE PIXELMAX PIXELMIN
+pix_min = 690
+pix_max = 1150
+
+# print pix_min
+# print pix_max
+file = open("output.csv", 'w')
+file.write("Wavelength\tIntensity\n")
+# this is for horizontal shifting to plot wavelength graph on top of output image. See Line #HS1
+SHIFT = 600
+for x in range(pix_min, pix_max):
+    y = 0.0
+    y = float(mid(x, slopes[7], intercepts[7]))
+    r, g, b = pix[x, y]
+    intensity = r + g + b
+    nm = PixelToWaveLength(x, (pix_min, pix_max), (405, 620))
+    draw.point((x, (Height - intensity/2) ),fill='white')
+    _draw.line((x, Height, x, (Height - intensity / 2)), fill=wavelengthToColor(nm))
+    # HS1
+    draw.line((x, Height - SHIFT, x, (Height - intensity / 2) - SHIFT), fill=wavelengthToColor(nm))
+    file.write(str(x - pix_min) + "\t" + str(nm) + "\t" + str(float(intensity) / (255.0 * 3.0)) + "\n")
+
 for i in range(len(slopes)):
     draw.line((0, mid(0, slopes[i], intercepts[i]), Width, mid(Width, slopes[i], intercepts[i])),fill="#888")
+draw.line((0, Up(0), Width, Up(Width)),fill="#888")
+draw.line((0, Down(0), Width, Down(Width)),fill="#888")
 
 
+draw.line((pix_min, 0, pix_min, Height),fill='white')
+draw.line((pix_max, 0, pix_max, Height),fill='white')
 
-
+chart.save("chart.jpeg", "JPEG", quality=80, optimize=True, progressive=True)
 im.save("output.jpg", "JPEG", quality=80, optimize=True, progressive=True)
