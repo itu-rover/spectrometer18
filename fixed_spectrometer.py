@@ -37,6 +37,7 @@ class Point(object):
         else:
             return False
 
+
 def DrawLinesY((m_top, n_top), (m_bot, n_bot)):
     def top_eqY(value):
         return m_top * value + n_top
@@ -93,6 +94,7 @@ def PixelToWaveLength(pixel_x, (pixel_min, pixel_max), (wave_min, wave_max)):
     scalar = float(pixel_x - pixel_min) / float(pixel_max - pixel_min)
     return scalar * float(wave_max - wave_min) + wave_min
 
+
 # System Setup
 spectrum_angle = 0
 spectrum_aperture = 385
@@ -143,16 +145,14 @@ def i_mid(y_val, slope, n):
 chart = Image.new('RGB', (Width, Height), (255,255,255))
 _draw = ImageDraw.Draw(chart)
 
-
 file = open(project_name + "output.csv", 'w')
+# Write to file the head
 file.write("count\twavelength\tintensity\n")
-# this is for horizontal shifting to plot wavelength graph on top of output image. See Line #HS1
-white_raw = open("white_raw.csv", 'r')
-white_raw.readline()
 
-# for x in range(pix_min, pix_max):
-#     for n in range(line_count):
-#
+# The percentage is based on white_raw data
+white_raw = open("white_raw/white_raw.csv", 'r')
+# Ignore First Line
+white_raw.readline()
 
 for x in range(pix_min, pix_max):
     intensity = 0.0
