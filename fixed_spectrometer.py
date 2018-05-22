@@ -97,10 +97,11 @@ def PixelToWaveLength(pixel_x, (pixel_min, pixel_max), (wave_min, wave_max)):
 
 # System Setup
 spectrum_angle = 0
-spectrum_aperture = 385
-spectrum_min = 470
-pix_min = 690
-pix_max = 1150
+spectrum_aperture = 340
+# spectrum_aperture = 385
+spectrum_min = 405
+pix_min = 600
+pix_max = pix_min + 460
 PLOT_SHIFT = 850
 thresholds = [ 405, 435, 487, 545, 585, 610, 780 ];
 intensity_threshold = 55
@@ -174,9 +175,10 @@ for x in range(pix_min, pix_max):
 
     # Base value, white paper
     white_y = float(white_raw.readline().split("\t")[2])
+    # white_y = 100
 
     # Plot scatter, white: white paper, green: actual data
-    draw.point((x, (Height - intensity / 2) ),fill='green')
+    draw.point((x, (Height - intensity / 2) ),fill='red')
     draw.point((x, (Height - white_y / 2)),fill='white')
 
     # Draw to the chart

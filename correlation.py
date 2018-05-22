@@ -54,7 +54,7 @@ if DEBUG:
     df2 = pd.read_csv('dataset/utah3_1/output.csv', skipinitialspace=True, names=fields, sep='\t', skiprows=1)
     print np.corrcoef(df.intensity, df2.intensity)[0][1]
 
-result = calculate_between_dataset("utah1_3", correlation_threshold=0, debug=True)
+result = calculate_between_dataset(sys.argv[1], correlation_threshold=0, debug=True)
 for line in result:
     print line
 
