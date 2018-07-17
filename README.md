@@ -15,6 +15,9 @@ The results are located in /results folder, containing the output files with the
 ```
 python correlation_manual.py <IMAGENAME>
 ```
+# TODO:
+The repository itself is still under-construction, for further support please mail the Author or Maintainer.
 
 # ABOUT
 *Author:* Sencer Yazici - senceryazici@gmail.com
+*Maintainer:* The repo has no Maintainer right now.
