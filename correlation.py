@@ -5,14 +5,14 @@ from collections import Counter
 
 DEBUG = False
 
-def calculate_between_dataset(data_name, correlation_threshold=0.7, debug=False):
+def calculate_between_dataset(data_name, correlation_threshold=0.7, folder_name="", debug=False):
     fields = ['count', 'wavelength', 'intensity']
     dataframes = []
 
     # Load Dataset
-    for path in os.listdir("dataset/"):
+    for path in os.listdir("dataset/" + folder_name):
         if path != ".DS_Store":
-            _df = pd.read_csv("dataset/" + path + "/output.csv", skipinitialspace=True, names=fields, sep='\t', skiprows=1)
+            _df = pd.read_csv("dataset/" + folder_name + path + "/output.csv", skipinitialspace=True, names=fields, sep='\t', skiprows=1)
             _df.name = path
             dataframes.append(_df)
 
@@ -45,7 +45,15 @@ def closest_match(input_string):
             name_dict[name] = 1
         else:
             name_dict[name] = name_dict[name] + 1
+        print name_dict
     return max(name_dict, key=name_dict.get)
+
+
+def calculate(name, folder_name=""):
+    folder_name += "/"
+    result = calculate_between_dataset(name, correlation_threshold=0, folder_name=folder_name, debug=True)
+    return result
+    print closest_match(result)
 
 if DEBUG:
     dataframes = []
@@ -53,9 +61,4 @@ if DEBUG:
     df = pd.read_csv('dataset/utah3_4/output.csv', skipinitialspace=True, names=fields, sep='\t', skiprows=1)
     df2 = pd.read_csv('dataset/utah3_1/output.csv', skipinitialspace=True, names=fields, sep='\t', skiprows=1)
     print np.corrcoef(df.intensity, df2.intensity)[0][1]
-
-result = calculate_between_dataset(sys.argv[1], correlation_threshold=0, debug=True)
-for line in result:
-    print line
-
-print closest_match(result)
+    calculate(sys.argv[1])

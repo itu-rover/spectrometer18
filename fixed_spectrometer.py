@@ -1,7 +1,7 @@
 import os, sys, math, time
 from PIL import Image, ImageDraw, ImageFile, ImageFont
 from collections import OrderedDict
-from fractions import Fraction
+# from fractions import Fraction
 import numpy as np
 import colorsys
 
